@@ -8748,8 +8748,7 @@ function openBiosPage() {
      person 1, then person 2 immediately below, then person 3, etc.
     */
     buildContinuousBios();
-    lockBiosWheelToDetailsPane();
-
+    
     const content =
         document.querySelector(
             ".bios-content"
@@ -11724,42 +11723,6 @@ function scrollToBiography(name, behavior = "smooth") {
     });
 }
 
-
-/* ---------------------------------------------------------
-   MOUSE WHEEL OVER LEFT INDEX -> SCROLL RIGHT DETAILS
-   --------------------------------------------------------- */
-
-function lockBiosWheelToDetailsPane() {
-    const index =
-        document.querySelector(".bios-index");
-
-    const content =
-        document.querySelector(".bios-content");
-
-    if (!index || !content) return;
-
-    if (index.dataset.wheelLinked === "true") {
-        return;
-    }
-
-    index.dataset.wheelLinked = "true";
-
-    index.addEventListener(
-        "wheel",
-        event => {
-            event.preventDefault();
-
-            content.scrollBy({
-                top: event.deltaY,
-                left: 0,
-                behavior: "auto"
-            });
-        },
-        { passive: false }
-    );
-}
-
-
 /* ---------------------------------------------------------
    SINGLE AUTHORITATIVE BIOGRAPHY RENDERER
    Builds BOTH the left index and right continuous document.
@@ -11967,19 +11930,6 @@ function rebuildSortedBios() {
 function buildContinuousBios() {
     rebuildSortedBios();
 }
-
-
-/* ---------------------------------------------------------
-   INITIALISATION
-   --------------------------------------------------------- */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-        lockBiosWheelToDetailsPane();
-    }
-);
-
 
 </script>
 
