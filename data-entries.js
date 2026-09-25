@@ -48,7 +48,13 @@ const entryData = [
   [
     "Thursday, 25 September 1941",
     "Duty now until Sunday - meet Joan again 3pm. Had letter from Rose Australia, also from High Commissioner, answered it and volunteered for ship going home mentioned Bert to. Heard guns in the Channel must be a convoy going through. Rather misty today looks like rain soon. Ben is now Quarter Master with me and is planning to be in the same mess?",
-    []
+    [
+       "Joan", 
+       "Rose", 
+       "William Jordan", 
+       "Bert", 
+       "Ben"
+    ]
   ],
   [
     "Friday, 26 September 1941",
