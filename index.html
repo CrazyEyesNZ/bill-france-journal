@@ -8529,7 +8529,6 @@ function renderMedalsPage() {
 
 
 function openMedalsPage() {
-
     closePhoto();
     closeBiosPage();
     closeArchivePages();
@@ -11201,12 +11200,17 @@ if (
 
 
 /* =========================================================
-   BIOS — CONTINUOUS DOCUMENT
-   All biographies appear one below the next. The left-hand
-   name index scrolls the biography document to that person.
+   BIOS — CONSOLIDATED CONTINUOUS DOCUMENT
+   One renderer, one scroll/highlight system, one wheel handler.
    ========================================================= */
 
-let biosContinuousBuilt = false;
+let biosSortOrder = "journal";
+let biosReturnPerson = null;
+
+
+/* ---------------------------------------------------------
+   BASIC BIOGRAPHY DATA HELPERS
+   --------------------------------------------------------- */
 
 function bioSafeId(value) {
     return "bio-person-" +
@@ -11218,184 +11222,89 @@ function bioSafeId(value) {
             .replace(/^-+|-+$/g, "");
 }
 
+
 function getJournalBioRecords() {
-    if (typeof JOURNAL_BIOS !== "undefined" && Array.isArray(JOURNAL_BIOS)) return JOURNAL_BIOS;
-    if (typeof biographyData !== "undefined" && Array.isArray(biographyData)) return biographyData;
-    if (typeof bioData !== "undefined" && Array.isArray(bioData)) return bioData;
-    if (typeof biographies !== "undefined" && Array.isArray(biographies)) return biographies;
-    if (typeof BIOS !== "undefined" && Array.isArray(BIOS)) return BIOS;
+    if (typeof JOURNAL_BIOS !== "undefined" && Array.isArray(JOURNAL_BIOS)) {
+        return JOURNAL_BIOS;
+    }
 
-    if (typeof biographyData !== "undefined" && biographyData && typeof biographyData === "object")
+    if (typeof biographyData !== "undefined" && Array.isArray(biographyData)) {
+        return biographyData;
+    }
+
+    if (typeof bioData !== "undefined" && Array.isArray(bioData)) {
+        return bioData;
+    }
+
+    if (typeof biographies !== "undefined" && Array.isArray(biographies)) {
+        return biographies;
+    }
+
+    if (typeof BIOS !== "undefined" && Array.isArray(BIOS)) {
+        return BIOS;
+    }
+
+    if (typeof biographyData !== "undefined" && biographyData && typeof biographyData === "object") {
         return Object.entries(biographyData).map(([name, value]) =>
-            typeof value === "object" ? { name, ...value } : { name, biography: value });
+            typeof value === "object"
+                ? { name, ...value }
+                : { name, biography: value }
+        );
+    }
 
-    if (typeof bioData !== "undefined" && bioData && typeof bioData === "object")
+    if (typeof bioData !== "undefined" && bioData && typeof bioData === "object") {
         return Object.entries(bioData).map(([name, value]) =>
-            typeof value === "object" ? { name, ...value } : { name, biography: value });
+            typeof value === "object"
+                ? { name, ...value }
+                : { name, biography: value }
+        );
+    }
 
-    if (typeof biographies !== "undefined" && biographies && typeof biographies === "object")
+    if (typeof biographies !== "undefined" && biographies && typeof biographies === "object") {
         return Object.entries(biographies).map(([name, value]) =>
-            typeof value === "object" ? { name, ...value } : { name, biography: value });
+            typeof value === "object"
+                ? { name, ...value }
+                : { name, biography: value }
+        );
+    }
 
     return [];
 }
 
+
 function bioRecordName(record) {
-    return record.name || record.Name || record.person || record.title || "";
+    return record.name ||
+           record.Name ||
+           record.person ||
+           record.title ||
+           "";
 }
+
 
 function bioRecordIdentification(record) {
-    return record.identification || record.Identification || record.role ||
-           record.position || record.rank || "";
+    return record.identification ||
+           record.Identification ||
+           record.role ||
+           record.position ||
+           record.rank ||
+           "";
 }
+
 
 function bioRecordText(record) {
-    return record.biography || record.Biography || record.bio ||
-           record.text || record.details || record.description || "";
+    return record.biography ||
+           record.Biography ||
+           record.bio ||
+           record.text ||
+           record.details ||
+           record.description ||
+           "";
 }
 
-function buildContinuousBios() {
-    const content = document.querySelector(".bios-content");
-    const list = document.querySelector(".bios-list");
-    if (!content || !list) return;
 
-    const records = getJournalBioRecords();
-    if (!records.length) return;
-
-    biosContinuousBuilt = true;
-
-    content.innerHTML = "";
-
-    const closeButton = document.createElement("button");
-    closeButton.className = "bios-close";
-    closeButton.type = "button";
-    closeButton.textContent = "Close";
-    closeButton.onclick = closeBiosPage;
-    content.appendChild(closeButton);
-
-    const wrap = document.createElement("div");
-    wrap.className = "bios-continuous-list";
-
-    records.forEach(record => {
-        const name = bioRecordName(record);
-        if (!name) return;
-
-        const section = document.createElement("section");
-        section.className = "bios-person-section";
-        section.id = bioSafeId(name);
-        section.dataset.bioName = name;
-
-        const heading = document.createElement("h2");
-        heading.className = "bios-name";
-        heading.textContent = name;
-        section.appendChild(heading);
-
-        const identification = bioRecordIdentification(record);
-        if (identification) {
-            const id = document.createElement("div");
-            id.className = "bios-identification";
-            id.textContent = identification;
-            section.appendChild(id);
-        }
-
-        const text = document.createElement("div");
-        text.className = "bios-biography";
-        text.textContent = bioRecordText(record);
-        section.appendChild(text);
-
-        wrap.appendChild(section);
-    });
-
-    content.appendChild(wrap);
-
-    // Rewire the existing name buttons: click a name -> scroll its biography into view.
-    [...list.querySelectorAll(".bio-list-button")].forEach(button => {
-        button.onclick = event => {
-            event.preventDefault();
-            const name = button.dataset.name || button.textContent.trim();
-            const target = document.getElementById(bioSafeId(name));
-            if (!target) return;
-
-            [...list.querySelectorAll(".bio-list-button")]
-                .forEach(b => b.classList.toggle("active", b === button));
-
-            target.scrollIntoView({
-                behavior: "smooth",
-                block: "start"
-            });
-        };
-    });
-
-    // As the user scrolls the biographies, highlight the nearest name in the index.
-    content.addEventListener("scroll", () => {
-        const sections = [...content.querySelectorAll(".bios-person-section")];
-        if (!sections.length) return;
-
-        const contentTop = content.getBoundingClientRect().top;
-        let current = sections[0];
-
-        for (const section of sections) {
-            if (section.getBoundingClientRect().top - contentTop <= 55) {
-                current = section;
-            } else {
-                break;
-            }
-        }
-
-        const currentName = current.dataset.bioName;
-        [...list.querySelectorAll(".bio-list-button")].forEach(button => {
-            const name = button.dataset.name || button.textContent.trim();
-            button.classList.toggle("active", name === currentName);
-        });
-    });
-}
-
-document.addEventListener("click", event => {
-    const target = event.target.closest("#mainBiosButton");
-    if (!target) return;
-    requestAnimationFrame(() => {
-        requestAnimationFrame(buildContinuousBios);
-    });
-});
-
-
-function lockBiosWheelToDetailsPane() {
-    /*
-     Native browser scrolling is deliberately used here.
-     It is faster and respects the user's Windows/Chrome wheel settings.
-    */
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    requestAnimationFrame(() => {
-        buildContinuousBios();
-        lockBiosWheelToDetailsPane();
-    });
-});
-
-document.addEventListener("click", event => {
-    const target = event.target.closest("#mainBiosButton");
-    if (!target) return;
-
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            buildContinuousBios();
-            lockBiosWheelToDetailsPane();
-        });
-    });
-});
-
-
-/* =========================================================
-   BIOS — SORT ORDER
-   Journal = original JOURNAL_BIOS order
-   Alphabetical = name A-Z
-   Longest = largest biography narrative first
-   ========================================================= */
-
-let biosSortOrder = "journal";
-
-let biosReturnPerson = null;
+/* ---------------------------------------------------------
+   SORTING
+   --------------------------------------------------------- */
 
 function sortedJournalBioRecords() {
     const records = [...getJournalBioRecords()];
@@ -11409,8 +11318,7 @@ function sortedJournalBioRecords() {
             )
         );
     }
-
-    if (biosSortOrder === "longest") {
+    else if (biosSortOrder === "longest") {
         records.sort((a, b) => {
             const difference =
                 bioRecordText(b).length -
@@ -11431,36 +11339,177 @@ function sortedJournalBioRecords() {
     return records;
 }
 
-function renderBiosSortControls() {
-    const list =
-        document.querySelector(".bios-list");
 
-    if (!list) return;
+/* ---------------------------------------------------------
+   JOURNAL ENTRY HELPERS
+   --------------------------------------------------------- */
 
-    let controls =
-        list.querySelector(
-            ".bios-sort-controls"
+function normaliseBioPersonName(value) {
+    return String(value || "")
+        .trim()
+        .toLocaleLowerCase();
+}
+
+
+function journalEntriesForBioPerson(record) {
+    const links =
+        record && record.journalLinks
+            ? record.journalLinks
+            : {
+                names: [
+                    bioRecordName(record),
+                    ...((record && record.aliases) || [])
+                ]
+            };
+
+    const wantedNames =
+        new Set(
+            (links.names || [])
+                .map(normaliseBioPersonName)
+                .filter(Boolean)
         );
 
-    if (!controls) {
-        controls =
-            document.createElement("div");
+    const wantedDates =
+        Array.isArray(links.dates) && links.dates.length
+            ? new Set(links.dates)
+            : null;
 
-        controls.className =
-            "bios-sort-controls";
+    return journalData
+        .map((entry, index) => ({
+            entry,
+            index
+        }))
+        .filter(item => {
+            const date = item.entry[1] || "";
 
-        const heading =
-            list.querySelector("h1, h2, h3");
+            if (wantedDates && !wantedDates.has(date)) {
+                return false;
+            }
 
-        if (heading) {
-            heading.insertAdjacentElement(
-                "afterend",
-                controls
+            const people =
+                Array.isArray(item.entry[6])
+                    ? item.entry[6]
+                    : [];
+
+            return people.some(person =>
+                wantedNames.has(
+                    normaliseBioPersonName(person)
+                )
             );
-        } else {
-            list.prepend(controls);
-        }
+        });
+}
+
+
+function journalEntryPreview(value) {
+    const clean =
+        String(value || "")
+            .replace(/\s+/g, " ")
+            .trim();
+
+    if (clean.length <= 150) {
+        return clean;
     }
+
+    return clean.slice(0, 147).trimEnd() + "…";
+}
+
+
+function addBioJournalEntries(section, record) {
+    const name = bioRecordName(record);
+    const heading = section.querySelector(".bios-name");
+
+    if (!heading || !name) return;
+
+    const row = document.createElement("div");
+    row.className = "bios-name-row";
+
+    heading.parentNode.insertBefore(row, heading);
+    row.appendChild(heading);
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "bios-journal-button";
+    button.textContent = "Journal Entries";
+    row.appendChild(button);
+
+    const panel = document.createElement("div");
+    panel.className = "bios-journal-panel";
+    row.insertAdjacentElement("afterend", panel);
+
+    let built = false;
+
+    button.addEventListener("click", () => {
+        const opening = !panel.classList.contains("open");
+
+        if (opening && !built) {
+            built = true;
+
+            const matches = journalEntriesForBioPerson(record);
+
+            const count = document.createElement("div");
+            count.className = "bios-journal-count";
+            count.textContent =
+                matches.length === 1
+                    ? "1 journal entry"
+                    : `${matches.length} journal entries`;
+
+            panel.appendChild(count);
+
+            if (!matches.length) {
+                const empty = document.createElement("div");
+                empty.className = "bios-journal-entry-preview";
+                empty.textContent =
+                    "No journal entries are currently linked to this biography name.";
+                panel.appendChild(empty);
+            }
+
+            matches.forEach(({ entry, index }) => {
+                const entryButton = document.createElement("button");
+                entryButton.type = "button";
+                entryButton.className = "bios-journal-entry";
+
+                const date = document.createElement("span");
+                date.className = "bios-journal-entry-date";
+                date.textContent = entry[1] || "";
+                entryButton.appendChild(date);
+
+                const previewText = journalEntryPreview(entry[2]);
+
+                if (previewText) {
+                    const preview = document.createElement("span");
+                    preview.className = "bios-journal-entry-preview";
+                    preview.textContent = previewText;
+                    entryButton.appendChild(preview);
+                }
+
+                entryButton.addEventListener("click", event => {
+                    event.stopPropagation();
+
+                    biosReturnPerson = name;
+                    closeBiosPage();
+
+                    renderPage(
+                        journalToPage(index)
+                    );
+                });
+
+                panel.appendChild(entryButton);
+            });
+        }
+
+        panel.classList.toggle("open", opening);
+        button.classList.toggle("open", opening);
+    });
+}
+
+
+/* ---------------------------------------------------------
+   LEFT-HAND SORT CONTROLS
+   --------------------------------------------------------- */
+
+function renderBiosSortControls(list) {
+    const controls = document.createElement("div");
+    controls.className = "bios-sort-controls";
 
     const options = [
         ["journal", "Journal"],
@@ -11468,41 +11517,253 @@ function renderBiosSortControls() {
         ["longest", "Longest"]
     ];
 
-    controls.innerHTML = "";
-
     options.forEach(([value, label]) => {
-        const button =
-            document.createElement("button");
+        const button = document.createElement("button");
 
-        button.type =
-            "button";
-
-        button.className =
-            "bios-sort-button";
-
-        button.textContent =
-            label;
+        button.type = "button";
+        button.className = "bios-sort-button";
+        button.textContent = label;
 
         button.classList.toggle(
             "active",
             biosSortOrder === value
         );
 
-        button.addEventListener(
-            "click",
-            () => {
-                biosSortOrder =
-                    value;
+        button.addEventListener("click", () => {
+            const current = getCurrentBioSection();
 
-                rebuildSortedBios();
+            biosReturnPerson =
+                current
+                    ? current.dataset.bioName || null
+                    : null;
+
+            biosSortOrder = value;
+            rebuildSortedBios();
+        });
+
+        controls.appendChild(button);
+    });
+
+    list.appendChild(controls);
+}
+
+
+/* ---------------------------------------------------------
+   DETERMINE THE BIOGRAPHY AT THE TOP OF THE DETAILS PANE
+   --------------------------------------------------------- */
+
+function getCurrentBioSection() {
+    const content = document.querySelector(".bios-content");
+
+    if (!content) return null;
+
+    const sections =
+        [...content.querySelectorAll(".bios-person-section")];
+
+    if (!sections.length) return null;
+
+    const contentTop =
+        content.getBoundingClientRect().top;
+
+    let current = sections[0];
+
+    for (const section of sections) {
+        const distance =
+            section.getBoundingClientRect().top -
+            contentTop;
+
+        if (distance <= 70) {
+            current = section;
+        }
+        else {
+            break;
+        }
+    }
+
+    return current;
+}
+
+
+/* ---------------------------------------------------------
+   KEEP THE ACTIVE NAME VISIBLE IN THE LEFT INDEX
+   --------------------------------------------------------- */
+
+function scrollActiveBioButtonIntoView(activeButton) {
+    if (!activeButton) return;
+
+    const index =
+        document.querySelector(".bios-index");
+
+    if (!index) return;
+
+    const buttonRect =
+        activeButton.getBoundingClientRect();
+
+    const indexRect =
+        index.getBoundingClientRect();
+
+    const topBuffer = 100;
+    const bottomBuffer = 30;
+
+    if (buttonRect.top < indexRect.top + topBuffer) {
+        index.scrollBy({
+            top:
+                buttonRect.top -
+                indexRect.top -
+                topBuffer,
+            behavior: "auto"
+        });
+    }
+    else if (
+        buttonRect.bottom >
+        indexRect.bottom - bottomBuffer
+    ) {
+        index.scrollBy({
+            top:
+                buttonRect.bottom -
+                indexRect.bottom +
+                bottomBuffer,
+            behavior: "auto"
+        });
+    }
+}
+
+
+/* ---------------------------------------------------------
+   SET THE ACTIVE NAME
+   --------------------------------------------------------- */
+
+function setActiveBioName(name, followIndex = true) {
+    const list =
+        document.querySelector(".bios-list");
+
+    if (!list) return;
+
+    let activeButton = null;
+
+    list.querySelectorAll(".bio-list-button")
+        .forEach(button => {
+            const buttonName =
+                button.dataset.name ||
+                button.textContent.trim();
+
+            const active =
+                buttonName === name;
+
+            button.classList.toggle(
+                "active",
+                active
+            );
+
+            if (active) {
+                activeButton = button;
             }
+        });
+
+    if (followIndex && activeButton) {
+        scrollActiveBioButtonIntoView(
+            activeButton
+        );
+    }
+}
+
+
+/* ---------------------------------------------------------
+   UPDATE ACTIVE NAME WHEN DETAILS PANE SCROLLS
+   --------------------------------------------------------- */
+
+function updateActiveBioFromScroll() {
+    const current =
+        getCurrentBioSection();
+
+    if (!current) return;
+
+    setActiveBioName(
+        current.dataset.bioName || "",
+        true
+    );
+}
+
+
+/* ---------------------------------------------------------
+   CLICK A NAME -> SCROLL DETAILS TO THAT BIOGRAPHY
+   --------------------------------------------------------- */
+
+function scrollToBiography(name, behavior = "smooth") {
+    const content =
+        document.querySelector(".bios-content");
+
+    const target =
+        document.getElementById(
+            bioSafeId(name)
         );
 
-        controls.appendChild(
-            button
-        );
+    if (!content || !target) return;
+
+    setActiveBioName(name, true);
+
+    /*
+     Use the details pane's own scroll position rather than
+     window/page scrolling.
+    */
+    const contentRect =
+        content.getBoundingClientRect();
+
+    const targetRect =
+        target.getBoundingClientRect();
+
+    const top =
+        content.scrollTop +
+        targetRect.top -
+        contentRect.top -
+        18;
+
+    content.scrollTo({
+        top: Math.max(0, top),
+        behavior
     });
 }
+
+
+/* ---------------------------------------------------------
+   MOUSE WHEEL OVER LEFT INDEX -> SCROLL RIGHT DETAILS
+   --------------------------------------------------------- */
+
+function lockBiosWheelToDetailsPane() {
+    const index =
+        document.querySelector(".bios-index");
+
+    const content =
+        document.querySelector(".bios-content");
+
+    if (!index || !content) return;
+
+    if (index.dataset.wheelLinked === "true") {
+        return;
+    }
+
+    index.dataset.wheelLinked = "true";
+
+    index.addEventListener(
+        "wheel",
+        event => {
+            event.preventDefault();
+
+            content.scrollBy({
+                top: event.deltaY,
+                left: 0,
+                behavior: "auto"
+            });
+        },
+        { passive: false }
+    );
+}
+
+
+/* ---------------------------------------------------------
+   SINGLE AUTHORITATIVE BIOGRAPHY RENDERER
+   Builds BOTH the left index and right continuous document.
+   --------------------------------------------------------- */
 
 function rebuildSortedBios() {
     const list =
@@ -11517,16 +11778,11 @@ function rebuildSortedBios() {
         sortedJournalBioRecords();
 
     /*
-     Rebuild left-hand name index.
+     LEFT INDEX
     */
-    const heading =
-        list.querySelector("h1, h2, h3");
+    list.innerHTML = "";
 
-    list.querySelectorAll(
-        ".bio-list-button, .bios-sort-controls"
-    ).forEach(element => element.remove());
-
-    renderBiosSortControls();
+    renderBiosSortControls(list);
 
     records.forEach(record => {
         const name =
@@ -11537,50 +11793,31 @@ function rebuildSortedBios() {
         const button =
             document.createElement("button");
 
-        button.type =
-            "button";
-
-        button.className =
-            "bio-list-button";
-
-        button.dataset.name =
-            name;
-
-        button.textContent =
-            name;
+        button.type = "button";
+        button.className = "bio-list-button";
+        button.dataset.name = name;
+        button.textContent = name;
 
         button.addEventListener(
             "click",
-            () => {
-                const target =
-                    document.getElementById(
-                        bioSafeId(name)
-                    );
+            event => {
+                event.preventDefault();
 
-                if (!target) return;
+                biosReturnPerson = name;
 
-                list.querySelectorAll(
-                    ".bio-list-button"
-                ).forEach(b =>
-                    b.classList.toggle(
-                        "active",
-                        b === button
-                    )
+                scrollToBiography(
+                    name,
+                    "smooth"
                 );
-
-                target.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start"
-                });
             }
         );
 
         list.appendChild(button);
     });
 
+
     /*
-     Rebuild right-hand continuous biography document in
-     exactly the same selected order.
+     RIGHT CONTINUOUS DOCUMENT
     */
     content.innerHTML = "";
 
@@ -11599,9 +11836,7 @@ function rebuildSortedBios() {
     closeButton.onclick =
         closeBiosPage;
 
-    content.appendChild(
-        closeButton
-    );
+    content.appendChild(closeButton);
 
     const wrap =
         document.createElement("div");
@@ -11636,9 +11871,7 @@ function rebuildSortedBios() {
         heading.textContent =
             name;
 
-        section.appendChild(
-            heading
-        );
+        section.appendChild(heading);
 
         const identification =
             bioRecordIdentification(record);
@@ -11656,373 +11889,97 @@ function rebuildSortedBios() {
             section.appendChild(id);
         }
 
-        const text =
+        const biography =
             document.createElement("div");
 
-        text.className =
+        biography.className =
             "bios-biography";
 
-        text.textContent =
+        biography.textContent =
             bioRecordText(record);
 
-        section.appendChild(text);
-        wrap.appendChild(section);
+        section.appendChild(
+            biography
+        );
+
+        /*
+         Journal Entries is created here as part of the
+         same render pass. No later wrapper is needed.
+        */
+        addBioJournalEntries(
+            section,
+            record
+        );
+
+        wrap.appendChild(
+            section
+        );
     });
 
     content.appendChild(wrap);
 
-    if (!biosReturnPerson) {
-        content.scrollTop = 0;
 
-        const firstButton =
-            list.querySelector(
-                ".bio-list-button"
+    /*
+     Install ONE scroll listener.
+     Assignment via onscroll means rebuilding cannot stack
+     multiple competing listeners.
+    */
+    content.onscroll =
+        updateActiveBioFromScroll;
+
+
+    /*
+     Restore the biography the user came from, otherwise
+     start at the first biography.
+    */
+    const requestedName =
+        biosReturnPerson &&
+        document.getElementById(
+            bioSafeId(biosReturnPerson)
+        )
+            ? biosReturnPerson
+            : (
+                records.length
+                    ? bioRecordName(records[0])
+                    : null
             );
 
-        if (firstButton) {
-            firstButton.classList.add(
-                "active"
+    requestAnimationFrame(() => {
+        if (requestedName) {
+            scrollToBiography(
+                requestedName,
+                "auto"
             );
         }
-    }
+        else {
+            content.scrollTop = 0;
+        }
 
-    renderBiosSortControls();
+        updateActiveBioFromScroll();
+    });
 }
+
 
 /*
- Override the continuous builder so subsequent Bios openings
- respect the selected sort order as well.
+ Existing openBiosPage() calls this function.
+ Keep the name as a small compatibility wrapper.
 */
-const originalBuildContinuousBios =
-    buildContinuousBios;
-
-buildContinuousBios =
-    function () {
-        rebuildSortedBios();
-    };
-
-
-/* =========================================================
-   BIOS — JOURNAL ENTRIES FOR EACH PERSON
-   Uses journalData[index][6], the same people-mentioned data
-   already joined from data-entries.js.
-   ========================================================= */
-
-function normaliseBioPersonName(value) {
-    return String(value || "")
-        .trim()
-        .toLocaleLowerCase();
+function buildContinuousBios() {
+    rebuildSortedBios();
 }
 
-function journalEntriesForBioPerson(record) {
-    const links =
-        record && record.journalLinks
-        ? record.journalLinks
-        : {
-            names: [
-                bioRecordName(record),
-                ...((record && record.aliases) || [])
-            ]
-        };
 
-    const wantedNames =
-        new Set(
-            (links.names || [])
-                .map(normaliseBioPersonName)
-                .filter(Boolean)
-        );
-
-    const wantedDates =
-        Array.isArray(links.dates) && links.dates.length
-        ? new Set(links.dates)
-        : null;
-
-    return journalData
-        .map((entry, index) => ({
-            entry,
-            index
-        }))
-        .filter(item => {
-            const date = item.entry[1] || "";
-
-            if (wantedDates && !wantedDates.has(date)) {
-                return false;
-            }
-
-            const people =
-                Array.isArray(item.entry[6])
-                ? item.entry[6]
-                : [];
-
-            return people.some(person =>
-                wantedNames.has(
-                    normaliseBioPersonName(person)
-                )
-            );
-        });
-}
-
-function journalEntryPreview(text) {
-    const clean =
-        String(text || "")
-            .replace(/\s+/g, " ")
-            .trim();
-
-    if (clean.length <= 150) {
-        return clean;
-    }
-
-    return clean.slice(0, 147).trimEnd() + "…";
-}
-
-function addBioJournalEntries(section, record) {
-    const name =
-        bioRecordName(record);
-
-    const heading =
-        section.querySelector(".bios-name");
-
-    if (!heading || !name) return;
-
-    const row =
-        document.createElement("div");
-
-    row.className =
-        "bios-name-row";
-
-    heading.parentNode.insertBefore(
-        row,
-        heading
-    );
-
-    row.appendChild(
-        heading
-    );
-
-    const button =
-        document.createElement("button");
-
-    button.type =
-        "button";
-
-    button.className =
-        "bios-journal-button";
-
-    button.textContent =
-        "Journal Entries";
-
-    row.appendChild(
-        button
-    );
-
-    const panel =
-        document.createElement("div");
-
-    panel.className =
-        "bios-journal-panel";
-
-    row.insertAdjacentElement(
-        "afterend",
-        panel
-    );
-
-    let built =
-        false;
-
-    button.addEventListener(
-        "click",
-        () => {
-            const opening =
-                !panel.classList.contains(
-                    "open"
-                );
-
-            if (opening && !built) {
-                built = true;
-
-                const matches =
-                    journalEntriesForBioPerson(
-                        record
-                    );
-
-                const count =
-                    document.createElement("div");
-
-                count.className =
-                    "bios-journal-count";
-
-                count.textContent =
-                    matches.length === 1
-                    ? "1 journal entry"
-                    : `${matches.length} journal entries`;
-
-                panel.appendChild(
-                    count
-                );
-
-                if (!matches.length) {
-                    const empty =
-                        document.createElement("div");
-
-                    empty.className =
-                        "bios-journal-entry-preview";
-
-                    empty.textContent =
-                        "No journal entries are currently linked to this biography name.";
-
-                    panel.appendChild(
-                        empty
-                    );
-                }
-
-                matches.forEach(
-                    ({entry, index}) => {
-                        const entryButton =
-                            document.createElement(
-                                "button"
-                            );
-
-                        entryButton.type =
-                            "button";
-
-                        entryButton.className =
-                            "bios-journal-entry";
-
-                        const date =
-                            document.createElement(
-                                "span"
-                            );
-
-                        date.className =
-                            "bios-journal-entry-date";
-
-                        date.textContent =
-                            entry[1] || "";
-
-                        entryButton.appendChild(
-                            date
-                        );
-
-                        const previewText =
-                            journalEntryPreview(
-                                entry[2]
-                            );
-
-                        if (previewText) {
-                            const preview =
-                                document.createElement(
-                                    "span"
-                                );
-
-                            preview.className =
-                                "bios-journal-entry-preview";
-
-                            preview.textContent =
-                                previewText;
-
-                            entryButton.appendChild(
-                                preview
-                            );
-                        }
-
-                        entryButton.addEventListener(
-                            "click",
-                            event => {
-                                event.stopPropagation();
-
-                                biosReturnPerson = name;
-
-                                closeBiosPage();
-
-                                renderPage(
-                                    journalToPage(
-                                        index
-                                    )
-                                );
-                            }
-                        );
-
-                        panel.appendChild(
-                            entryButton
-                        );
-                    }
-                );
-            }
-
-            panel.classList.toggle(
-                "open",
-                opening
-            );
-
-            button.classList.toggle(
-                "open",
-                opening
-            );
-        }
-    );
-}
-
-function installBioJournalEntryButtons() {
-    const records =
-        sortedJournalBioRecords();
-
-    const sections =
-        document.querySelectorAll(
-            "#biosPage .bios-person-section"
-        );
-
-    sections.forEach(
-        (section, index) => {
-            if (
-                section.querySelector(
-                    ".bios-journal-button"
-                )
-            ) {
-                return;
-            }
-
-            const name =
-                section.dataset.bioName || "";
-
-            const record =
-                records.find(item =>
-                    bioRecordName(item) === name
-                )
-                ||
-                records[index];
-
-            if (record) {
-                addBioJournalEntries(
-                    section,
-                    record
-                );
-            }
-        }
-    );
-}
-
-/*
- The continuous biography document is rebuilt whenever the
- sort order changes. Add the Journal Entries controls after
- every rebuild.
-*/
-const rebuildSortedBiosWithoutJournalEntries =
-    rebuildSortedBios;
-
-rebuildSortedBios =
-    function () {
-        rebuildSortedBiosWithoutJournalEntries();
-        installBioJournalEntryButtons();
-    };
+/* ---------------------------------------------------------
+   INITIALISATION
+   --------------------------------------------------------- */
 
 document.addEventListener(
     "DOMContentLoaded",
     () => {
-        requestAnimationFrame(
-            installBioJournalEntryButtons
-        );
+        lockBiosWheelToDetailsPane();
     }
 );
+
 
 </script>
 
