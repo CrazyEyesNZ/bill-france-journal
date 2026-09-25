@@ -132,7 +132,7 @@ const entryData = [
   ],
   [
     "Sunday, 5 October 1941",
-    "Gloomy weather today started raining at 10.15am. had a few heavy showers, sun came out. Off duty at 12.30am met Joan at 2.30pm. went for stroll. Had tea met again at 5.45pm. another stroll convinced that I love her never felt this way before. On board 10.15pm.Gloomy weather today started raining at 10.15am. had a few heavy showers, sun came out. Off duty at 12.30am met Joan at 2.30pm. went for stroll. Had tea met again at 5.45pm. another stroll convinced that I love her never felt this way before. On board 10.15pm.",
+    "Gloomy weather today started raining at 10.15am. had a few heavy showers, sun came out. Off duty at 12.30am met Joan at 2.30pm. went for stroll. Had tea met again at 5.45pm. another stroll convinced that I love her never felt this way before. On board 10.15pm.",
     [
       "Joan"
     ]
