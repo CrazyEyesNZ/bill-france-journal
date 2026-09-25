@@ -75,42 +75,41 @@ const photoData = [
     }
   ],
   [
-    "photos/Image1.JPG",
-    {
-      "photoId": "P00004",
-      "filename": "Image1.JPG",
-      "status": "Active",
-      "sortingBox": "Unconnected",
-      "location": "",
-      "date": "1942",
-      "albumComment": "My three brothers",
-      "caption": "Harry - Taken 42",
-      "reverseText": "",
-      "keywords": [
-        "1942",
-        "Harry France",
-        "Friday, 26 September 1941",
-        "1941"
-      ],
-      "description": "",
-      "people": [
-        "Harry France"
-      ],
-      "faceCount": 1,
-      "companionPhotos": [],
-      "journalEntries": [
-        {
-          "date": "Friday, 26 September 1941",
-          "caption": "Harry France"
-        }
-      ],
-      "thumbnailCrop": {
-        "x": 50,
-        "y": 0,
-        "zoom": 1
+  "photos/Image1.JPG",
+  {
+    "photoId": "P00004",
+    "filename": "Image1.JPG",
+    "status": "Active",
+    "sortingBox": "Unconnected",
+    "location": "",
+    "date": "1942",
+    "albumComment": "My three brothers",
+    "caption": "Bert - Taken 41",
+    "reverseText": "",
+    "keywords": [
+      "Bert",
+      "Thursday, 25 September 1941",
+      "1941"
+    ],
+    "description": "",
+    "people": [
+      "Bert"
+    ],
+    "faceCount": 1,
+    "companionPhotos": [],
+    "journalEntries": [
+      {
+        "date": "Thursday, 25 September 1941",
+        "caption": "Bert"
       }
+    ],
+    "thumbnailCrop": {
+      "x": 50,
+      "y": 0,
+      "zoom": 1
     }
-  ],
+  }
+],
   [
     "photos/Image2.JPG",
     {
