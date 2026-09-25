@@ -11977,10 +11977,16 @@ function buildContinuousBios() {
 }
 
 .bios-list {
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    overflow: visible !important;
 }
 
+#biosPage .bios-index {
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+}
 
 /* Definitive continuous Bios document */
 .bios-content {
