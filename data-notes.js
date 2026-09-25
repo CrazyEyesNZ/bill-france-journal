@@ -34,7 +34,7 @@ const noteData = [
   ],
   [
     "Thursday, 25 September 1941",
-    "Joan, Rose, William Jordan, Bert, Ben",
+    "",
     ""
   ],
   [
