@@ -8530,24 +8530,15 @@ function renderMedalsPage() {
 
 function openMedalsPage() {
 
-
     closePhoto();
-
+    closeBiosPage();
+    closeArchivePages();
 
     renderMedalsPage();
 
-
-    closeBiosPage();
-
-
     document
-        .getElementById(
-            "medalsPage"
-        )
-        .classList.add(
-            "open"
-        );
-
+        .getElementById("medalsPage")
+        .classList.add("open");
 }
 
 
